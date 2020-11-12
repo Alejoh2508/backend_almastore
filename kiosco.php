@@ -41,25 +41,50 @@ class kiosco extends database {
 
   public function getProductos($mParam) {
     $mResult = [];
-    $nLimit = isset($mParam["limit"]) ? $mParam["limit"] : 9;
-    $nPage = isset($mParam["page"]) ? $mParam["page"] : 0;
-    $sProduc = "SELECT p.* ";
-    $sProduc .= "FROM productos as p ";
-    //    if (isset($mParam["id_categoria"]) && !empty($mParam["id_categoria"]) && $mParam["id_categoria"] != 0) {
-    //      $sProduc .= "JOIN generos_categorias AS gc ON gc.id_genero_categoria = p.fk_id_genero_categoria AND gc.estado = \"ACTIVO\" ";
-    //    }
-    if (isset($mParam["id_genero"]) && !empty($mParam["id_genero"]) && $mParam["id_genero"] != 0) {
+    $nLimit = isset($mParam["filters"]["limit"]) ? $mParam["filters"]["limit"] : 9;
+    $nPage = isset($mParam["filters"]["page"]) ? $mParam["filters"]["page"] : 0;
+    $sProduc = "SELECT p.id_producto, ";
+    $sProduc .= "p.nombre_producto, ";
+    $sProduc .= "p.unidades_disponibles, ";
+    $sProduc .= "p.precio_unitario, ";
+    if (
+      (isset($mParam["filters"]["categoria"]) && !empty($mParam["filters"]["categoria"])) ||
+      (isset($mParam["filters"]["genero"]) && !empty($mParam["filters"]["genero"]))
+    ) {
+      $sProduc .= "c.id_categoria, ";
+      $sProduc .= "c.nombre_categoria, ";
+      $sProduc .= "g.id_genero, ";
+      $sProduc .= "g.descripcion, ";
+    }
+    $sProduc .= "dt.id_detalle_producto, ";
+    $sProduc .= "dt.imagen, ";
+    $sProduc .= "dt.tallas ";
+    $sProduc .= "FROM detalle_producto AS dt ";
+    $sProduc .= "JOIN productos AS p ON p.id_producto = dt.fk_id_producto AND p.estado = \"ACTIVO\" ";
+    if (
+      (isset($mParam["filters"]["categoria"]) && !empty($mParam["filters"]["categoria"])) ||
+      (isset($mParam["filters"]["genero"]) && !empty($mParam["filters"]["genero"]))
+    ) {
       $sProduc .= "JOIN generos_categorias AS gc ON gc.id_genero_categoria = p.fk_id_genero_categoria AND gc.estado = \"ACTIVO\" ";
+      $sProduc .= "JOIN categorias AS c ON c.id_categoria = gc.fk_id_categoria AND c.estado = \"ACTIVO\" ";
       $sProduc .= "JOIN generos AS g ON g.id_genero = gc.fk_id_genero AND g.estado = \"ACTIVO\" ";
     }
-    $sProduc .= "WHERE p.estado = \"ACTIVO\" ";
-    if (isset($mParam["id_categoria"]) && !empty($mParam["id_categoria"]) && $mParam["id_categoria"] != 0) {
-      $sProduc .= "AND p.fk_id_genero_categoria = \"{$mParam["id_categoria"]}\" ";
+    $sProduc .= "WHERE dt.estado = \"ACTIVO\" ";
+    if (isset($mParam["filters"]["categoria"]) && !empty($mParam["filters"]["categoria"])) {
+      $sProduc .= "AND c.nombre_categoria = \"{$mParam["filters"]["categoria"]}\" ";
     }
-    if (isset($mParam["id_genero"]) && !empty($mParam["id_genero"]) && $mParam["id_genero"] != 0) {
-      $sProduc .= "AND g.id_genero = \"{$mParam["id_genero"]}\" ";
+    if (isset($mParam["filters"]["genero"]) && !empty($mParam["filters"]["genero"])) {
+      $sProduc .= "AND g.descripcion = \"{$mParam["filters"]["genero"]}\" ";
     }
+    $sProduc .= "GROUP BY p.id_producto ";
+    $sProduc .= "ORDER BY p.id_producto DESC ";
     $sProduc .= "LIMIT {$nPage}, {$nLimit}";
+    $objResult = $this->connect()->query($sProduc);
+    if ($objResult->rowCount()) {
+      while ($vAssRes = $objResult->fetch(PDO::FETCH_ASSOC)) {
+        array_push($mResult, $vAssRes);
+      }
+    }
+    return $mResult;
   }
-
 }

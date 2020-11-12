@@ -5,13 +5,6 @@ ini_set('display_errors', 1);
 error_reporting(-1);
 
 require_once 'kiosco.php';
-// echo 'SERVE<pre>';
-// print_r($_SERVER);
-// echo 'REQUEST<pre>';
-// print_r($_REQUEST);
-// $data = json_decode(file_get_contents('php://input'), true);
-// echo 'JSON<pre>';
-// print_r($data);
 
 $objKiosco = new kiosco();
 $vUri = explode("api.php/", $_SERVER['REQUEST_URI']);

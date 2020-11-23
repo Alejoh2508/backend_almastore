@@ -110,4 +110,60 @@ class kiosco extends database {
     }
     return $mResult;
   }
+
+  public function f_CrearCliente($mParam) {
+    $mResult = [];
+    $sCliente = "SELECT c.id_cliente, ";
+    $sCliente .= "c.cedula ";
+    $sCliente .= "FROM clientes AS c ";
+    $sCliente .= "WHERE c.cedula = \"{$mParam["cliente"]["cedula"]}\" ";
+    $objResult = $this->connect()->query($sCliente);
+    if ($objResult->rowCount()) {
+      array_push($mResult, array("mensaje" => "El usuario a registrar ya existe en nuestro sistema"));
+    } else {
+      $sCedula = $mParam["cliente"]["cedula"];
+      $sNombres = strtoupper($mParam["cliente"]["nombres"]);
+      $sApellidos = strtoupper($mParam["cliente"]["apellidos"]);
+      $sFecNac = $mParam["cliente"]["fecha_nacimiento"];
+      $sCorreo = strtolower($mParam["cliente"]["correo"]);
+      $sTelefono = $mParam["cliente"]["telefono"];
+      $sContras = sha1($mParam["cliente"]["contrasenia"]);
+
+      $sInsCli = "INSERT INTO clientes (cedula, nombres, apellidos, fecha_nacimiento, correo, telefono, contrasenia, estado, fecha_creacion, hora_creacion) ";
+      $sInsCli .= "VALUES (\"{$sCedula}\", \"{$sNombres}\", \"{$sApellidos}\", \"{$sFecNac}\", \"{$sCorreo}\", {$sTelefono}, \"{$sContras}\", \"ACTIVO\", CURDATE(), CURTIME())";
+      $objResult = $this->connect()->query($sInsCli);
+      if ($objResult->rowCount()) {
+        array_push($mResult, array("mensaje" => "El usuario se registró con exito"));
+      }
+    }
+    return $mResult;
+  }
+  
+  public function f_Login($mParam) {
+    $mResult = [];
+    $sUsuario = $mParam["usuario"];
+    $sContras = sha1($mParam["contrasenia"]);
+
+    $sCliente = "SELECT c.id_cliente, ";
+    $sCliente .= "c.cedula, ";
+    $sCliente .= "c.correo, ";
+    $sCliente .= "c.contrasenia ";
+    $sCliente .= "FROM clientes AS c ";
+    $sCliente .= "WHERE c.cedula = \"{$sUsuario}\" ";
+    $sCliente .= "OR c.correo = \"{$sUsuario}\" ";
+    $objResult = $this->connect()->query($sCliente);
+    if (!$objResult->rowCount()) {
+      array_push($mResult, array("mensaje" => "El usuario no existe, por favor verifique"));
+    } else {
+      $vAssRes = $objResult->fetch(PDO::FETCH_ASSOC);
+      if ($vAssRes["contrasenia"] != $sContras) {
+        array_push($mResult, array("mensaje" => "Contraseña errada, por favor verifique"));
+      } else {
+        unset($vAssRes["contrasenia"]);
+        $vAssRes["id_cliente"] = md5($vAssRes["id_cliente"]);
+        array_push($mResult, $vAssRes);
+      }
+    }
+    return $mResult;
+  }
 }

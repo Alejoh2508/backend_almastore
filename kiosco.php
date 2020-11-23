@@ -87,4 +87,27 @@ class kiosco extends database {
     }
     return $mResult;
   }
+
+  public function getDetalleProducto($mParam) {
+    $mResult = [];
+    $sDetProd = "";
+    $sDetProd = "SELECT p.id_producto, ";
+    $sDetProd .= "p.nombre_producto, ";
+    $sDetProd .= "p.unidades_disponibles, ";
+    $sDetProd .= "p.precio_unitario, ";
+    $sDetProd .= "dt.id_detalle_producto, ";
+    $sDetProd .= "dt.imagen, ";
+    $sDetProd .= "dt.tallas ";
+    $sDetProd .= "FROM detalle_producto AS dt ";
+    $sDetProd .= "JOIN productos AS p ON p.id_producto = dt.fk_id_producto AND p.estado = \"ACTIVO\" ";
+    $sDetProd .= "WHERE dt.estado = \"ACTIVO\" ";
+    $sDetProd .= "AND dt.fk_id_producto = \"{$mParam["filters"]["id_producto"]}\" ";
+    $objResult = $this->connect()->query($sDetProd);
+    if ($objResult->rowCount()) {
+      while ($vAssRes = $objResult->fetch(PDO::FETCH_ASSOC)) {
+        array_push($mResult, $vAssRes);
+      }
+    }
+    return $mResult;
+  }
 }

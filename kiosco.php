@@ -160,9 +160,58 @@ class kiosco extends database {
         array_push($mResult, array("mensaje" => "Contraseña errada, por favor verifique"));
       } else {
         unset($vAssRes["contrasenia"]);
-        $vAssRes["id_cliente"] = md5($vAssRes["id_cliente"]);
         array_push($mResult, $vAssRes);
       }
+    }
+    return $mResult;
+  }
+
+  public function f_crearPedido($mParam) {
+    $mResult = [];
+    $idCli = $mParam["id_cliente"];
+    $sDir = $mParam["direccion"];
+    $nSubTotal = 0;
+    $nIva = 0.19;
+    $nTotal = 0;
+    foreach($mParam["detalle"] as $vDetalle) {
+      $nIdProd = $vDetalle["id_producto"];
+      $sProd = "SELECT p.id_producto, ";
+      $sProd .= "p.precio_unitario ";
+      $sProd .= "FROM productos AS p ";
+      $sProd .= "WHERE p.id_producto = \"{$nIdProd}\" ";
+      $objResProd = $this->connect()->query($sProd);
+      $vAssResProd = $objResProd->fetch(PDO::FETCH_ASSOC);
+      $nUnid = $vDetalle["unidades"];
+      $nSubTotal += $vAssResProd["precio_unitario"] * $nUnid;
+    }
+    $nTotalIva = $nSubTotal * $nIva;
+    $nTotal = $nSubTotal + $nTotalIva;
+
+    $sInsVen = "INSERT INTO ventas (fk_id_cliente, subtotal, iva, valor_total, direccion, estado, fecha_creacion, hora_creacion) ";
+    $sInsVen .= "VALUES ({$idCli}, {$nSubTotal}, {$nIva}, {$nTotal}, \"{$sDir}\", \"ACTIVO\", CURDATE(), CURTIME())";
+    $objResVen = $this->connect()->query($sInsVen);
+    if ($objResVen->rowCount()) {
+      $sVentas = "SELECT v.id_consecutivo_venta ";
+      $sVentas .= "FROM ventas AS v ";
+      $sVentas .= "ORDER BY v.id_consecutivo_venta DESC LIMIT 1 ";
+      $objResVen = $this->connect()->query($sVentas);
+      $vAssResVen = $objResVen->fetch(PDO::FETCH_ASSOC);
+      foreach($mParam["detalle"] as $vDetalle) {
+        $nIdVenta = $vAssResVen["id_consecutivo_venta"];
+        $nIdProd = $vDetalle["id_producto"];
+        $nUnid = $vDetalle["unidades"];
+        $sTalla = $vDetalle["talla"];
+        $sInsDVen = "INSERT INTO detalle_ventas (fk_id_consecutivo_venta, fk_id_producto, cantidad, talla, estado, fecha_creacion, hora_creacion) ";
+        $sInsDVen .= "VALUES ({$nIdVenta}, {$nIdProd}, {$nUnid}, \"{$sTalla}\", \"ACTIVO\", CURDATE(), CURTIME())";
+        $objResDVen = $this->connect()->query($sInsDVen);
+        if ($objResDVen->rowCount()) {
+          array_push($mResult, array("mensaje" => "Orden de compra creada con exito"));
+        } else {
+          array_push($mResult, array("mensaje" => "Error al crear el detalle de la orden de compra"));
+        }
+      }
+    } else {
+      array_push($mResult, array("mensaje" => "Error al crear la cabecera de la orden de compra"));
     }
     return $mResult;
   }

@@ -17,7 +17,14 @@ switch ($cMetodo) {
     $mResult = $objKiosco->{$vUri[1]}($mParams);
     break;
   case "GET":
+    header('Content-Type: application/json');
     $mResult = $objKiosco->{$vUri[1]}();
+    break;
+  case "OPTIONS":
+    header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+    header("Access-Control-Allow-Headers: Content-Type, origin");
+    header('Access-Control-Max-Age: 86400');
+    die(0);
     break;
   default:
     echo "Metodo invalido.";
